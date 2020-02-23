@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
         "strings"
+        "strconv"
         "os"
         "bufio"
 
@@ -74,21 +75,24 @@ func main() {
 
 	activityserve.Setup("config.ini", *debugFlag)
 
-        // get the actor name also here
+        // get the port and actor name also here
         file, err := os.Open("config.ini")
         if err != nil { log.Fatal(err) }
         defer file.Close()
         scanner := bufio.NewScanner(file)
         var userag string = "newact"
+        var port int = 8081
         for scanner.Scan() {
             s := scanner.Text()
             if strings.HasPrefix(s,"userAgent") {
                 ss := strings.Split(s,"\"")
                 userag = ss[len(ss)-2]
-                break
+            } else if strings.HasPrefix(s,"port") {
+                ss := strings.Split(s," ")
+                port,_ = strconv.Atoi(ss[len(ss)-1])
             }
         }
-        fmt.Println("loaded userag "+userag)
+        fmt.Println("loaded userag "+userag+ " port "+strconv.Itoa(port))
 
 	// This creates the actor if it doesn't exist.
 	actor, _ = activityserve.GetActor(userag, "This is polson father", "Service")
@@ -110,7 +114,7 @@ func main() {
 	}
 
         go func() {
-            activityserve.ServeSingleActor(actor,7938)
+            activityserve.ServeSingleActor(actor,port)
         }()
         fmt.Println("starting cli")
         cli()
