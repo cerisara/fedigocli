@@ -12,7 +12,21 @@ import (
 	"github.com/cerisara/activityserve"
 )
 
+/*
+
+Notes:
+- les messages que l'on recoit lorsqu'on follow qqun ne sont pas stockes en local: ils sont envoyes instantannement aux followers, qui les traitent mais ne les sauvent pas
+
+*/
+
 var actor activityserve.Actor
+
+// const actype = "Service"
+const actype = "Person"
+
+func myMsg() {
+    fmt.Printf("mymsg %v\n",actor)
+}
 
 func cli() {
         reader := bufio.NewReader(os.Stdin)
@@ -22,6 +36,9 @@ func cli() {
             text = strings.Replace(text, "\n", "", -1)
             if strings.HasPrefix(text,"post ") {
                 post(text[5:])
+            } else if strings.Compare(text,"l") == 0 { myMsg()
+            } else if strings.Compare(text,"w") == 0 {
+                fmt.Printf("whoami %v\n",actor.WhoAmI())
             } else if strings.Compare(text,"following") == 0 {
                 fl := actor.Following()
                 fmt.Printf("following: %v\n",fl)
@@ -42,7 +59,6 @@ func post(s string) {
 }
 
 func follow(u string) {
-	// actor.Follow("https://mastodon.etalab.gouv.fr/@cerisara")
         fmt.Println("following "+u)
 	actor.Follow(u)
 }
@@ -81,23 +97,25 @@ func main() {
         defer file.Close()
         scanner := bufio.NewScanner(file)
         var userag string = "newact"
+        var userdesc string = "I'm a bot"
         var port int = 8081
         for scanner.Scan() {
             s := scanner.Text()
             if strings.HasPrefix(s,"userAgent") {
                 ss := strings.Split(s,"\"")
                 userag = ss[len(ss)-2]
+            } else if strings.HasPrefix(s,"userDesc") {
+                ss := strings.Split(s,"\"")
+                userdesc = ss[len(ss)-2]
             } else if strings.HasPrefix(s,"port") {
                 ss := strings.Split(s," ")
                 port,_ = strconv.Atoi(ss[len(ss)-1])
             }
         }
-        fmt.Println("loaded userag "+userag+ " port "+strconv.Itoa(port))
+        fmt.Println("loaded userag "+userag+ " desc "+userdesc + " port "+strconv.Itoa(port))
 
 	// This creates the actor if it doesn't exist.
-	actor, _ = activityserve.GetActor(userag, "This is polson father", "Service")
-
-        fmt.Printf("actor created %T\n",actor)
+	actor, _ = activityserve.GetActor(userag, userdesc, actype)
 
 	// actor.Follow("https://pleroma.site/users/qwazix")
 	// actor.CreateNote("Hello World!", "")
